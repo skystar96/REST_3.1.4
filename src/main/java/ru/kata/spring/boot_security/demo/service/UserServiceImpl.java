@@ -1,13 +1,10 @@
 package ru.kata.spring.boot_security.demo.service;
 
-
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.AuthorityUtils;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,67 +13,57 @@ import ru.kata.spring.boot_security.demo.model.User;
 import ru.kata.spring.boot_security.demo.reposirory.RoleRepository;
 import ru.kata.spring.boot_security.demo.reposirory.UserRepository;
 
-import javax.persistence.EntityManager;
-import javax.persistence.PersistenceContext;
-
-import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 
 
 @Service
-public class AppService implements UserDetailsService {
+public class UserServiceImpl implements UserDetailsService, UserService {
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
-
-    @PersistenceContext
-    private EntityManager entityManager;
-    private final PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+    private final PasswordEncoder passwordEncoder;
 
     @Autowired
-    public AppService(UserRepository userRepository, RoleRepository roleRepository) {
+    public UserServiceImpl(UserRepository userRepository, RoleRepository roleRepository, @Lazy PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
-    public User getUserById(Long id) {
-        return userRepository.findById(id).get();
-    }
-
-    public List<Role> listRoles() {
-        return roleRepository.findAll();
-    }
-
-    public List<User> getAllUsers() {
-        return userRepository.findAll();
-    }
-
+    @Override
     @Transactional
     public void saveUser(User user) {
         if (user.getRoles().isEmpty()) {
-            user.setRoles(Collections.singletonList(roleRepository.findRoleByName("ROLE_USER")));
+            user.setRoles((Set<Role>) roleRepository.findRoleByName("ROLE_USER"));
         }
         user.setPassword(passwordEncoder.encode(user.getPassword()));
         userRepository.save(user);
     }
 
-    @Transactional
-    public void saveRole(Role role) {
-        entityManager.persist(role);
-    }
-
-    public User findByUsername(String username) {
-        return userRepository.findByUsername(username);
-    }
-
+    @Override
     @Transactional
     public void removeUser(Long id) {
         userRepository.deleteById(id);
     }
 
-    @Transactional
+    @Override
     public void update(User user) {
         userRepository.save(user);
+    }
+
+    @Override
+    public List<User> getAllUsers() {
+        return userRepository.findAll();
+    }
+
+    @Override
+    public List<Role> listRoles() {
+        return roleRepository.findAll();
+    }
+
+    @Override
+    public User findByUsername(String username) {
+        return userRepository.findByUsername(username);
     }
 
     @Override
@@ -90,9 +77,4 @@ public class AppService implements UserDetailsService {
         return user;
     }
 
-    private static Collection<? extends GrantedAuthority> getAuthorities(User user) {
-        String[] userRoles = user.getRoles().stream().map((role) -> role.getName()).toArray(String[]::new);
-        Collection<GrantedAuthority> authorities = AuthorityUtils.createAuthorityList(userRoles);
-        return authorities;
-    }
 }
