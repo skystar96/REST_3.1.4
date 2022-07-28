@@ -23,7 +23,7 @@ public class Role implements GrantedAuthority {
 
     //Getters and setters
     public String getName() {
-        return name.substring(5);
+        return name;
     }
     public void setName(String name) {
         this.name = name;
@@ -39,4 +39,5 @@ public class Role implements GrantedAuthority {
     public String toString() {
         return this.name;
     }
+
 }

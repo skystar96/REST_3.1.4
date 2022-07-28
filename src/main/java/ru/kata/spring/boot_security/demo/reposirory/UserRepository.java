@@ -10,10 +10,11 @@ import java.util.List;
 
 @Repository
 public interface UserRepository extends JpaRepository<User, Long> {
+
    @Query("select u from User u join fetch u.roles where u.username = :username")
    User findByUsername(String username);
 
    @Query("SELECT DISTINCT u FROM User u LEFT JOIN FETCH u.roles ORDER BY u.id")
    List<User> findAll();
+
 }
-//Интерфейс JpaRepository предоставляет набор стандартных методов (findBy, save, deleteById и др.) для работы с БД.

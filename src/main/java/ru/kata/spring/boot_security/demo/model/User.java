@@ -5,9 +5,7 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import javax.persistence.*;
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -24,10 +22,10 @@ public class User implements UserDetails {
     private String lastName;
     @Column(name = "email")
     private String email;
-    @Column(name = "password")
+    @Column(name = "pass")
     private String password;
 
-    @ManyToMany
+    @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
             name = "users_roles",
             joinColumns = @JoinColumn(name = "user_id"),
@@ -42,7 +40,6 @@ public class User implements UserDetails {
         this.email = email;
         this.password = password;
     }
-
     public User() {
     }
 
@@ -56,6 +53,9 @@ public class User implements UserDetails {
     }
     public Long getId() {
         return id;
+    }
+    public void setId(Long id) {
+        this.id = id;
     }
     public String getLastName() {
         return lastName;
@@ -82,18 +82,13 @@ public class User implements UserDetails {
     public void setRoles(Set<Role> roles) {
         this.roles = roles;
     }
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public List<String> getRole() {
-        return roles.stream().map(role -> (role.getName())).toList();
-    }
 
     //Implements
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return getRoles();
+        return roles.stream()
+                .map(role -> new SimpleGrantedAuthority(role.getAuthority()))
+                .collect(Collectors.toList());
     }
     @Override
     public boolean isAccountNonExpired() {
